@@ -11,7 +11,11 @@ import s3fs
 import os
 #Reemplazar Engine y geemap
 from ipyleaflet.velocity import Velocity
-from ipyleaflet import Map, basemaps
+from ipyleaflet import Map, basemaps, ImageOverlay
+from ipywidgets import Layout
+from matplotlib.colors import Normalize, ListedColormap
+from PIL import Image
+import matplotlib.pyplot as plt
 
 
 

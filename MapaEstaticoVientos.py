@@ -1,13 +1,9 @@
-from import_vientos import *
-from ipywidgets import Layout
-from ipyleaflet import ImageOverlay
-from matplotlib.colors import Normalize
-from PIL import Image
-import matplotlib.pyplot as plt
+from import_vientos_v3 import *
 
 
 #Archivo local
 path = '/volumen/files/'
+
 
 #### DESCARGA DE DATOS ####
 #Obtener fecha actual UTC
@@ -35,7 +31,6 @@ print(ds)
 
 
 #### CONFIGURACION DE GRILLA ####
-
 resolution_lat = 0.1
 resolution_lon = 0.1
 lat_min = -56
@@ -52,7 +47,7 @@ print(ds_interpolated)
 
 print(ds_interpolated.head())
 
-#guaradr archivo
+#guardar archivo
 ds_interpolated.to_netcdf('ds_interpolated.nc')
 
 
@@ -84,61 +79,49 @@ ds = ds.assign_coords({"longitude": ds.lon.mean(dim='latitude'), "latitude": ds.
 #guardar archivo
 ds.to_netcdf('ds.nc')
 
+
+
 #### CONECTAR A GEE ####
 ##Eliminado
+
 
 
 #### VISUALIZACION EN MAPA INTERACTIVO ####
 
 ## Cargar mapa base de ipyleaflet
-m = Map(center=(-40, -64), zoom=5, layout= Layout(height ='100vh'), layer_ctrl=True, basemap=basemaps.CartoDB.DarkMatter)
+m = Map(center=(-37.5, -62), zoom=5, layout= Layout(height ='100vh'), layer_ctrl=True, basemap=basemaps.CartoDB.DarkMatter)
 
 ##Codigo geemap para cargar datos .nc (https://geemap.org/geemap/?h=add_velocity#geemap.geemap.Map.add_velocity)
-coords = list(ds.coords.keys())
 
 ##Eliminar dimension time para que funcione codigo
-if "time" in coords:
+if "time" in list(ds.coords.keys()):
     ds = ds.isel(time=0, drop=True)
 
-# Extraer valores viento
-viento = ds['magViento10'].values
 
-# Normalize data to a range of [0, 1] for colormap
-norm = Normalize(vmin = 0, vmax = 50)
-wind_normalized = norm(viento)
+# Normalizar para colormap [0, 1]
+norm = Normalize(vmin = 0, vmax = 50, clip = True)
 
-# Create a pcolormesh plot
+#Mapa de color
+#colores = ["#5e5a77", "#5b5b9d", "#4285ba", "#51ac92", "#4dc14a", "#90cb4d", "#cbd73f", "#d9c03e", "#d89d46", "#d4774b", "#cb4a73", "#a3355b", "#901c4f", "#631a1b", "#2b0001", "#000000", "#000000", "#000000", "#000000"]
+#cmap = ListedColormap(colores)
+
+# Crear mapa de fondo desde magnitud del viento
 fig, ax = plt.subplots(figsize=(8, 6))
-mesh = ax.pcolormesh(ds['lon'].values, ds['lat'].values, wind_normalized, cmap='rainbow', shading='auto')
-ax.axis('off')  # Turn off axes for a clean image
+mesh = ax.pcolormesh(ds['lon'].values, ds['lat'].values, norm(ds['magViento10'].values), cmap = "viridis", shading='auto')
+ax.axis('off')  
 
-
-"""
-# Use matplotlib's colormap to create an RGB image
-cmap = plt.get_cmap('rainbow')  # Choose a color map (coolwarm, viridis, etc.)
-rgba_img = cmap(wind_normalized)  # Map normalized data to RGBA
-
-# Convert to an image format
-rgba_img = (rgba_img * 255).astype(np.uint8)  # Scale to [0, 255]
-img = Image.fromarray(rgba_img)  # Convert to PIL image"""
-
-
-
-
-
-# Save the image temporarily
-img_name = "test_viento.png"
+# Exportar como .png
+img_name = "fondo_viento.png"
 plt.savefig(path + img_name, format="png", bbox_inches='tight', pad_inches=0)
 plt.close(fig)
-#img.save(path + img_name)
 
-# 2. Add the ImageOverlay to the map
-wind_layer = ImageOverlay(url=img_name, bounds=[[lat_min, lon_min], [lat_max, lon_max]], opacity=0.6)
-m.add_layer(wind_layer) 
+
+# 2. Cargar .png a mapa ipyleaflef con coordenadas limite
+m.add_layer(ImageOverlay(url=img_name, bounds=[[lat_min, lon_min], [lat_max, lon_max]], opacity=0.6)) 
 
 ##Generar mapa de velocidad de viento
-m.add(Velocity(data = ds, zonal_speed = "u_wind",  meridional_speed='v_wind', velocity_scale = 0.01, color_scale = "white"))
+m.add(Velocity(data = ds, zonal_speed = "u_wind",  meridional_speed='v_wind', velocity_scale = 0.005, color_scale = "white")) #velocity_scale cambia largo de lineas graficadas
 
 ##Exportar mapa a html
-archivo = path + f'vientos_smn_{INIT_DATE.date()}.html'
+archivo = path + f'vientos_smn_{INIT_DATE.date()}_{INIT_DATE.hour}.html'
 m.save(archivo, title='Mapa de Vientos - IGN')
