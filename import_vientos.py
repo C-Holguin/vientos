@@ -12,11 +12,11 @@ import os
 #Reemplazar Engine y geemap
 from ipyleaflet.velocity import Velocity
 from ipyleaflet import Map, basemaps, ImageOverlay
-from ipywidgets import Layout
+#from ipywidgets import Layout
 from matplotlib.colors import Normalize, ListedColormap
 from PIL import Image
 import matplotlib.pyplot as plt
-
+import netCDF4 as nc
 
 
 # Define the function to download data based on date input

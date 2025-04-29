@@ -1,4 +1,4 @@
-from import_vientos_v3 import *
+from import_vientos_v4 import *
 
 
 #Archivo local
@@ -10,10 +10,10 @@ path = '/volumen/files/'
 fecha = datetime.datetime.now()
 
 # Extraer fecha de archivo deseado
-year = fecha.year
-month = fecha.month
-day = fecha.day
-hour = (6*((fecha.hour-3)//6) - 6) % 24 #redondear a ultima hora Arg con datos (00, 06, 12 o 18)
+year = 2024#fecha.year
+month = 10#fecha.month
+day = 31#fecha.day
+hour = 0#(6*((fecha.hour-3)//6) - 6) % 24 #redondear a ultima hora Arg con datos (00, 06, 12 o 18)
 forecast = 0
 
 # Crear el objeto datetime con los datos extraídos
@@ -24,8 +24,11 @@ print(f"Fecha inicial extraída del archivo: {INIT_DATE}")
 
 
 # Descargar archivo del SMN y Abrir archivo descargado
-smn_nc = datos_met_x_fecha(year= year, month= month, day= day, hour= hour, forecast= forecast, local_path = path)
-ds = xr.open_dataset(smn_nc, decode_coords = 'all', engine = 'h5netcdf')
+#smn_nc = datos_met_x_fecha(year= year, month= month, day= day, hour= hour, forecast= forecast, local_path = path)
+#ds = xr.open_dataset(smn_nc, decode_coords = 'all', engine = 'h5netcdf')
+file = '/volumen/files/Almacenamiento/Aggregated_Data_compressed9.nc'
+ds = xr.open_dataset(file, decode_coords = 'all', engine = 'h5netcdf')
+
 print(ds)
 
 
@@ -93,9 +96,12 @@ m = Map(center=(-37.5, -62), zoom=5, layout= Layout(height ='100vh'), layer_ctrl
 
 ##Codigo geemap para cargar datos .nc (https://geemap.org/geemap/?h=add_velocity#geemap.geemap.Map.add_velocity)
 
+
+ds = ds.sel(time=INIT_DATE).squeeze()###ELIMINAR
+
 ##Eliminar dimension time para que funcione codigo
-if "time" in list(ds.coords.keys()):
-    ds = ds.isel(time=0, drop=True)
+#if "time" in list(ds.coords.keys()):
+#    ds = ds.isel(time=INIT_DATE, drop=True)
 
 
 # Normalizar para colormap [0, 1]
