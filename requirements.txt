@@ -1,0 +1,9 @@
+xarray
+matplotlib
+ipywidgets
+ipyleaflet
+netCDF4
+xesmf
+s3fs
+h5netcdf
+Pillow

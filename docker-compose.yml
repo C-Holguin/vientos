@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  vientos:
+    build: .
+    container_name: contenedor_vientos
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: python MapaEstaticoVientos.py
+    ports:
+      - "8890:8888"
+    environment:
+      - PYTHONUNBUFFERED=1
