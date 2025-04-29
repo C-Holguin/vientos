@@ -6,17 +6,14 @@ import datetime
 import xesmf as xe #conda es necesario para esta linea
 import numpy as np
 
-#import geemap
-#import ee
-
+#descarga datos
 import s3fs
 import os
+#Reemplazar Engine y geemap
 from ipyleaflet.velocity import Velocity
-from ipyleaflet import Map, TileLayer, basemaps
+from ipyleaflet import Map, basemaps
 
 
-
-#import nctoolkit
 
 # Define the function to download data based on date input
 def datos_met_x_fecha(year, month, day, hour="00", frequency="01H", forecast="000", local_path=None):
@@ -69,7 +66,7 @@ def datos_met_x_fecha(year, month, day, hour="00", frequency="01H", forecast="00
             
         except Exception as e:
             print(f"Error: {e} \n En la descarga del archivo {s3_link}")
-    
+    # Devolver archivo de fecha indicada
     return local_file_path
 
 

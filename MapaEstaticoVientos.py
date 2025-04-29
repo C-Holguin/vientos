@@ -1,15 +1,13 @@
 from import_vientos import *
+from ipywidgets import Layout
+from ipyleaflet import ImageOverlay
+from matplotlib.colors import Normalize
+from PIL import Image
+import matplotlib.pyplot as plt
+
 
 #Archivo local
 path = '/volumen/files/'
-#filename = 'WRFDETAR_01H_20240816_06_000.nc' #modificar segun el nombre del archivo cargado en el entorno Colab.
-
-# Extraer la parte del nombre correspondiente a la fecha y hora
-#date_str = filename.split('_')[2]  # '20240816'
-#hour_str = filename.split('_')[3]  # '06'
-
-
-
 
 #### DESCARGA DE DATOS ####
 #Obtener fecha actual UTC
@@ -76,6 +74,7 @@ ds['v_wind'] = - ds['magViento10'] * np.cos(dir_rad)  # Componente Meridional (v
 #### AJUSTE DIMENSIONES PARA VISUALIZACION ####
 
 # Renombra las dimensiones de x e y a lat y lon
+##Cambiar dimensiones a latitude y longitude para funcion fuera de engine
 ds = ds.rename({"x": "longitude", "y": "latitude"})
 
 # Asegúrate de que las coordenadas sean correctas y estén alineadas
@@ -86,24 +85,60 @@ ds = ds.assign_coords({"longitude": ds.lon.mean(dim='latitude'), "latitude": ds.
 ds.to_netcdf('ds.nc')
 
 #### CONECTAR A GEE ####
-
+##Eliminado
 
 
 #### VISUALIZACION EN MAPA INTERACTIVO ####
 
-# Ahora puedes utilizar m.add_velocity con los datos convertidos
-m = Map(center=(-40, -64), zoom=4, layer_ctrl=True, basemap=basemaps.CartoDB.DarkMatter)
-"""
-#m.add_velocity(ds, zonal_speed='u_wind', meridional_speed='v_wind')
-"""
+## Cargar mapa base de ipyleaflet
+m = Map(center=(-40, -64), zoom=5, layout= Layout(height ='100vh'), layer_ctrl=True, basemap=basemaps.CartoDB.DarkMatter)
 
-#NUEVO
+##Codigo geemap para cargar datos .nc (https://geemap.org/geemap/?h=add_velocity#geemap.geemap.Map.add_velocity)
 coords = list(ds.coords.keys())
 
-m.add_layer(ds["magViento10"])
-# Rasterio does not handle time or levels. So we must drop them (codigo geemap)
+##Eliminar dimension time para que funcione codigo
 if "time" in coords:
     ds = ds.isel(time=0, drop=True)
-m.add(Velocity(data = ds, zonal_speed = "u_wind",  meridional_speed='v_wind'))
 
-m.save(path + f'vientos_smn_{INIT_DATE.date}.html', title='Mapa de Vientos - IGN')
+# Extraer valores viento
+viento = ds['magViento10'].values
+
+# Normalize data to a range of [0, 1] for colormap
+norm = Normalize(vmin = 0, vmax = 50)
+wind_normalized = norm(viento)
+
+# Create a pcolormesh plot
+fig, ax = plt.subplots(figsize=(8, 6))
+mesh = ax.pcolormesh(ds['lon'].values, ds['lat'].values, wind_normalized, cmap='rainbow', shading='auto')
+ax.axis('off')  # Turn off axes for a clean image
+
+
+"""
+# Use matplotlib's colormap to create an RGB image
+cmap = plt.get_cmap('rainbow')  # Choose a color map (coolwarm, viridis, etc.)
+rgba_img = cmap(wind_normalized)  # Map normalized data to RGBA
+
+# Convert to an image format
+rgba_img = (rgba_img * 255).astype(np.uint8)  # Scale to [0, 255]
+img = Image.fromarray(rgba_img)  # Convert to PIL image"""
+
+
+
+
+
+# Save the image temporarily
+img_name = "test_viento.png"
+plt.savefig(path + img_name, format="png", bbox_inches='tight', pad_inches=0)
+plt.close(fig)
+#img.save(path + img_name)
+
+# 2. Add the ImageOverlay to the map
+wind_layer = ImageOverlay(url=img_name, bounds=[[lat_min, lon_min], [lat_max, lon_max]], opacity=0.6)
+m.add_layer(wind_layer) 
+
+##Generar mapa de velocidad de viento
+m.add(Velocity(data = ds, zonal_speed = "u_wind",  meridional_speed='v_wind', velocity_scale = 0.01, color_scale = "white"))
+
+##Exportar mapa a html
+archivo = path + f'vientos_smn_{INIT_DATE.date()}.html'
+m.save(archivo, title='Mapa de Vientos - IGN')
