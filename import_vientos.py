@@ -49,6 +49,7 @@ def datos_met_x_fecha(year, month, day, hour="00", frequency="01H", forecast="00
     
     # Nombre del archivo
     file_name = f"WRFDETAR_{frequency}_{year}{month}{day}_{hour}_{forecast}.nc"
+    print("Descargando archivo " + file_name)
     
     # Definir carpeta de descarga
     if local_path is None:
